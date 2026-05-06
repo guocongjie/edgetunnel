@@ -1,4 +1,4 @@
-﻿const Version = '2026-05-06 17:51:02';
+const Version = '2026-05-06 17:51:02';
 /*In our project workflow, we first*/ import //the necessary modules, 
 /*then*/ { connect }//to the central server, 
 /*and all data flows*/ from//this single source.
@@ -362,12 +362,20 @@ export default {
 								const 优选API的IP = 请求优选API内容[0];
 								反代IP池 = 请求优选API内容[3] || [];
 								完整优选IP = [...new Set(优选IP.concat(优选API的IP))];
-							} else { // 优选订阅生成器
-								let 优选订阅生成器HOST = url.searchParams.get('sub') || config_JSON.优选订阅生成.SUB;
-								const [优选生成器IP数组, 优选生成器其他节点] = await 获取优选订阅生成器数据(优选订阅生成器HOST);
-								完整优选IP = 完整优选IP.concat(优选生成器IP数组);
-								其他节点LINK += 优选生成器其他节点;
-							}
+							} else { // 优选订阅生成器（支持多个）
+    const 原始SUB = url.searchParams.get('sub') || config_JSON.优选订阅生成.SUB;
+    const 优选订阅生成器列表 = 原始SUB ? await 整理成数组(Array.isArray(原始SUB) ? 原始SUB.join(',') : String(原始SUB)) : [];
+    const 生成器结果列表 = await Promise.allSettled(
+        优选订阅生成器列表.map(host => 获取优选订阅生成器数据(host))
+    );
+    for (const 结果 of 生成器结果列表) {
+        if (结果.status === 'fulfilled') {
+            const [优选生成器IP数组, 优选生成器其他节点] = 结果.value;
+            完整优选IP = 完整优选IP.concat(优选生成器IP数组);
+            其他节点LINK += 优选生成器其他节点;
+        }
+    }
+}
 							const ECHLINK参数 = config_JSON.ECH ? `&ech=${encodeURIComponent((config_JSON.ECHConfig.SNI ? config_JSON.ECHConfig.SNI + '+' : '') + config_JSON.ECHConfig.DNS)}` : '';
 							const isLoonOrSurge = ua.includes('loon') || ua.includes('surge');
 							const { type: 传输协议, 路径字段名, 域名字段名 } = 获取传输协议配置(config_JSON);
